@@ -1,0 +1,13 @@
+name: HelloWorld
+version: 1.0
+main: com.yourname.economyplugin.HelloWorldPlugin
+api-version: 1.20
+description: A simple plugin that sends "Hello world!" when a player uses /hello
+commands:
+  hello:
+    description: Sends a hello world message to the player
+    usage: /hello
+permissions:
+  helloworld.use:
+    description: Allows the player to use /hello
+    default: true
