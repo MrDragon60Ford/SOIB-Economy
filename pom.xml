@@ -2,14 +2,19 @@
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
+  <!-- Define the group and artifact id of your plugin -->
   <groupId>com.yourname.economyplugin</groupId>
   <artifactId>economy-plugin</artifactId>
+  <!-- Set the version of your plugin -->
   <version>1.0-SNAPSHOT</version>
+  <!-- Specify the packaging type as a jar file -->
   <packaging>jar</packaging>
 
+  <!-- Define the name and URL of your plugin -->
   <name>economy-plugin</name>
   <url>http://maven.apache.org</url>
 
+  <!-- Add a repository to download Paper API from -->
   <repositories>
     <repository>
       <id>papermc-repo</id>
@@ -17,8 +22,9 @@
     </repository>
   </repositories>
 
+  <!-- Define the dependencies for your plugin -->
   <dependencies>
-    <!-- Paper API -->
+    <!-- Include Paper API as a dependency, provided scope means it will be included in the compile classpath but not packaged into the jar file -->
     <dependency>
         <groupId>io.papermc.paper</groupId>
         <artifactId>paper-api</artifactId>
@@ -26,7 +32,7 @@
         <scope>provided</scope>
     </dependency>
 
-    <!-- JUnit 5 for testing -->
+    <!-- Add JUnit 5 for testing, API scope means it will be included in the compile classpath but not packaged into the jar file -->
     <dependency>
         <groupId>org.junit.jupiter</groupId>
         <artifactId>junit-jupiter-api</artifactId>
@@ -34,6 +40,7 @@
         <scope>test</scope>
     </dependency>
 
+    <!-- Add JUnit 5 engine for testing, API scope means it will be included in the compile classpath but not packaged into the jar file -->
     <dependency>
         <groupId>org.junit.jupiter</groupId>
         <artifactId>junit-jupiter-engine</artifactId>
