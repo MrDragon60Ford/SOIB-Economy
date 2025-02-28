@@ -5,6 +5,7 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.command.TabCompleter;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -13,8 +14,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
-public class BankPlugin extends JavaPlugin {
+public class BankPlugin extends JavaPlugin implements TabCompleter{
 
     // Enum for account types
     public enum AccountType {
@@ -98,6 +100,7 @@ public class BankPlugin extends JavaPlugin {
 
         // Register commands
         getCommand("bank").setExecutor(this);
+        getCommand("bank").setTabCompleter(this);
     }
 
     @Override
@@ -376,4 +379,40 @@ public class BankPlugin extends JavaPlugin {
     
         return true;
     }
+    @Override
+        public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
+            if (!command.getName().equalsIgnoreCase("bank")) {
+                return null;
+            }
+
+            List<String> completions = new ArrayList<>();
+
+            // First argument - subcommands
+            if (args.length == 1) {
+                completions.add("accounts");
+                completions.add("ledger");
+                completions.add("transaction");
+                completions.add("balance");
+                completions.add("account");
+                completions.add("hello");
+            }
+            // Second argument - account names for specific subcommands
+            else if (args.length == 2 && 
+                    (args[0].equalsIgnoreCase("ledger") || 
+                    args[0].equalsIgnoreCase("transaction") || 
+                    args[0].equalsIgnoreCase("balance") || 
+                    args[0].equalsIgnoreCase("account"))) {
+                completions.addAll(accounts.keySet());
+            }
+
+            // Filter completions based on what the user has already typed
+            if (!args[args.length - 1].isEmpty()) {
+                String input = args[args.length - 1].toLowerCase();
+                completions = completions.stream()
+                    .filter(s -> s.toLowerCase().startsWith(input))
+                    .collect(Collectors.toList());
+            }
+
+            return completions;
+        }
 }
