@@ -1,2 +1,5 @@
+com\yourname\economyplugin\BankPlugin$Account.class
+com\yourname\economyplugin\BankPlugin$LedgerEntry.class
 com\yourname\economyplugin\App.class
-com\yourname\economyplugin\HelloWorldPlugin.class
+com\yourname\economyplugin\BankPlugin$AccountType.class
+com\yourname\economyplugin\BankPlugin.class
