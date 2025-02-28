@@ -124,21 +124,28 @@ public class BankPlugin extends JavaPlugin {
         accounts.put(accountName, account);
         return account;
     }
-
+    private Account getAccountCaseInsensitive(String accountName) {
+        for (String key : accounts.keySet()) {
+            if (key.equalsIgnoreCase(accountName)) {
+                return accounts.get(key);
+            }
+        }
+        return null;
+    }
     private LedgerEntry recordTransaction(String accountName, double amount, String note) {
-        // Verify the account exists
-        Account account = accounts.get(accountName);
+        // Verify the account exists (case-insensitive)
+        Account account = getAccountCaseInsensitive(accountName);
         if (account == null) {
             return null;
         }
-
-        // Create ledger entry
-        LedgerEntry entry = new LedgerEntry(accountName, amount, note);
+    
+        // Create ledger entry using original account name
+        LedgerEntry entry = new LedgerEntry(account.getAccountName(), amount, note);
         ledgerEntries.add(entry);
-
+    
         // Update account balance
         account.updateBalance(amount);
-
+    
         return entry;
     }
 
@@ -217,29 +224,16 @@ public class BankPlugin extends JavaPlugin {
 
     private boolean viewLedger(CommandSender sender, String[] args) {
         sender.sendMessage(ChatColor.GOLD + "=== General Ledger ===");
-        // Filter by account if specified
         String accountFilter = null;
         if (args.length >= 2) {
             accountFilter = args[1];
-            String upperCaseAccountName = accountFilter.toUpperCase();
-            boolean accountFound = false;
-
-            // Check for account in a case-insensitive way
-            for (String account : accounts.keySet()) {
-                if (account.equalsIgnoreCase(accountFilter)) {
-                    accountFilter = account; // Use the actual case from the accounts map
-                    accountFound = true;
-                    break;
-                }
-            }
-
-            if (!accountFound) {
+            if (getAccountCaseInsensitive(accountFilter) == null) {
                 sender.sendMessage(ChatColor.RED + "Account not found: " + accountFilter);
                 return true;
             }
             sender.sendMessage(ChatColor.YELLOW + "Filtering for account: " + formatAccountName(accountFilter));
         }
-
+    
         int count = 0;
         for (LedgerEntry entry : ledgerEntries) {
             if (accountFilter == null || entry.getAccountName().equalsIgnoreCase(accountFilter)) {
@@ -253,92 +247,76 @@ public class BankPlugin extends JavaPlugin {
                 count++;
             }
         }
-
+    
         if (count == 0) {
             sender.sendMessage(ChatColor.YELLOW + "No ledger entries found.");
         }
         return true;
     }
     private boolean handleTransaction(CommandSender sender, String[] args) {
-        // Format: /bank transaction <accountName> <amount> <note>
         if (args.length < 4) {
             sender.sendMessage(ChatColor.RED + "Usage: /bank transaction <accountName> <amount> <note>");
             return true;
         }
-
-        String accountName = args[1].toUpperCase();
+    
+        String accountName = args[1];
         double amount;
-
+    
         try {
             amount = Double.parseDouble(args[2]);
         } catch (NumberFormatException e) {
             sender.sendMessage(ChatColor.RED + "Invalid amount. Please enter a valid number.");
             return true;
         }
-
-        // Combine remaining args for note
+    
         StringBuilder noteBuilder = new StringBuilder();
         for (int i = 3; i < args.length; i++) {
             if (i > 3) noteBuilder.append(" ");
             noteBuilder.append(args[i]);
         }
         String note = noteBuilder.toString();
-
-        // Check if account exists
-        if (!accounts.containsKey(accountName)) {
+    
+        LedgerEntry entry = recordTransaction(accountName, amount, note);
+        if (entry == null) {
             sender.sendMessage(ChatColor.RED + "Account not found: " + accountName);
             return true;
         }
-
-        // Record transaction
-        LedgerEntry entry = recordTransaction(accountName, amount, note);
-        if (entry == null) {
-            sender.sendMessage(ChatColor.RED + "Failed to record transaction.");
-            return true;
-        }
-
+    
         sender.sendMessage(ChatColor.GREEN + "Transaction recorded successfully:");
         sender.sendMessage(ChatColor.YELLOW + entry.toString());
-
-        // Show updated balance if applicable
-        Account account = accounts.get(accountName);
+    
+        Account account = getAccountCaseInsensitive(accountName);
         if (account.getAccountType() != AccountType.Expense &&
             account.getAccountType() != AccountType.Revenue) {
             sender.sendMessage(ChatColor.YELLOW + "New balance: $" +
                               String.format("%.2f", account.getBalance()));
         }
-
+    
         return true;
     }
 
     private boolean checkBalance(CommandSender sender, String[] args) {
-        // Format: /bank balance [accountName]
         if (args.length >= 2) {
-            String accountName = args[1].toUpperCase();
-
-            // Check if account exists
-            if (!accounts.containsKey(accountName)) {
+            String accountName = args[1];
+            Account account = getAccountCaseInsensitive(accountName);
+    
+            if (account == null) {
                 sender.sendMessage(ChatColor.RED + "Account not found: " + accountName);
                 return true;
             }
-
-            Account account = accounts.get(accountName);
-
+    
             if (account.getAccountType() == AccountType.Expense ||
                 account.getAccountType() == AccountType.Revenue) {
                 sender.sendMessage(ChatColor.YELLOW + formatAccountName(account.getAccountName()) +
                                   " (" + account.getAccountType() + ") does not maintain a balance.");
                 return true;
             }
-
+    
             sender.sendMessage(ChatColor.GOLD + "=== Account Balance ===");
             sender.sendMessage(ChatColor.GREEN + formatAccountName(account.getAccountName()) + ": $" +
                               String.format("%.2f", account.getBalance()));
-
         } else {
-            // Show all balances
             sender.sendMessage(ChatColor.GOLD + "=== Account Balances ===");
-
             for (Account account : accounts.values()) {
                 if (account.getAccountType() != AccountType.Expense &&
                     account.getAccountType() != AccountType.Revenue) {
@@ -348,41 +326,27 @@ public class BankPlugin extends JavaPlugin {
                 }
             }
         }
-
         return true;
     }
 
     private boolean getAccountInfo(CommandSender sender, String[] args) {
-        // Format: /bank account <accountName>
         if (args.length < 2) {
             sender.sendMessage(ChatColor.RED + "Usage: /bank account <accountName>");
             return true;
         }
-
+    
         String accountName = args[1];
-        String upperCaseAccountName = accountName.toUpperCase();
-        boolean accountFound = false;
-
-        // Check for account in a case-insensitive way
-        for (String account : accounts.keySet()) {
-            if (account.equalsIgnoreCase(accountName)) {
-                accountName = account; // Use the actual case from the accounts map
-                accountFound = true;
-                break;
-            }
-        }
-
-        if (!accountFound) {
+        Account account = getAccountCaseInsensitive(accountName);
+    
+        if (account == null) {
             sender.sendMessage(ChatColor.RED + "Account not found: " + accountName);
             return true;
         }
-
-        Account account = accounts.get(accountName);
-
+    
         sender.sendMessage(ChatColor.GOLD + "=== Account Information ===");
         sender.sendMessage(ChatColor.GREEN + "Name: " + ChatColor.WHITE + formatAccountName(account.getAccountName()));
         sender.sendMessage(ChatColor.GREEN + "Type: " + ChatColor.WHITE + account.getAccountType());
-
+    
         if (account.getAccountType() != AccountType.Expense &&
             account.getAccountType() != AccountType.Revenue) {
             sender.sendMessage(ChatColor.GREEN + "Balance: " + ChatColor.YELLOW + "$" +
@@ -390,14 +354,12 @@ public class BankPlugin extends JavaPlugin {
         } else {
             sender.sendMessage(ChatColor.YELLOW + "This account type does not maintain a balance.");
         }
-
-        // Show recent transactions
+    
         sender.sendMessage(ChatColor.GREEN + "Recent Transactions:");
-
         int count = 0;
         for (int i = ledgerEntries.size() - 1; i >= 0 && count < 5; i--) {
             LedgerEntry entry = ledgerEntries.get(i);
-            if (entry.getAccountName().equals(accountName)) {
+            if (entry.getAccountName().equalsIgnoreCase(accountName)) {
                 String amountColor = entry.getTransactionAmount() >= 0 ? ChatColor.GREEN.toString() : ChatColor.RED.toString();
                 sender.sendMessage(
                     ChatColor.GRAY + entry.getTransactionDate().format(DateTimeFormatter.ofPattern("MM-dd HH:mm")) + " " +
@@ -407,11 +369,11 @@ public class BankPlugin extends JavaPlugin {
                 count++;
             }
         }
-
+    
         if (count == 0) {
             sender.sendMessage(ChatColor.YELLOW + "No transactions found for this account.");
         }
-
+    
         return true;
     }
 }
